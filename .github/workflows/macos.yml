@@ -35,6 +35,8 @@ jobs:
           plutil -lint build/DiskSpace.app/Contents/Info.plist
           test -x build/DiskSpace.app/Contents/MacOS/DiskSpace
           codesign --verify --strict build/DiskSpace.app
+          test -s build/DiskSpace.app/Contents/Resources/DiskSpace.icns
+          iconutil -c iconset build/DiskSpace.app/Contents/Resources/DiskSpace.icns -o build/IconVerification.iconset
           file build/DiskSpace.app/Contents/MacOS/DiskSpace
           ditto -x -k build/DiskSpace-macOS.zip build/extraction-check
           test -x build/extraction-check/DiskSpace.app/Contents/MacOS/DiskSpace

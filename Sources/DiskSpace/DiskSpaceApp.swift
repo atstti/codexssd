@@ -57,6 +57,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        item.button?.image = NSImage(systemSymbolName: "internaldrive", accessibilityDescription: "DiskSpace")
+        item.button?.image?.isTemplate = true
+        item.button?.imagePosition = .imageLeading
         item.button?.title = "残り（推定）取得中…"
         item.button?.target = self
         item.button?.action = #selector(toggle)

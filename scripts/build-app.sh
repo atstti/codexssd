@@ -11,6 +11,8 @@ APP="build/DiskSpace.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/DiskSpace" "$APP/Contents/MacOS/DiskSpace"
 cp scripts/Info.plist "$APP/Contents/Info.plist"
+swift scripts/generate-icon.swift build/DiskSpace.iconset
+iconutil -c icns build/DiskSpace.iconset -o "$APP/Contents/Resources/DiskSpace.icns"
 codesign --force --sign - "$APP"
 codesign --verify --strict "$APP"
 # Use a conventional ZIP without Apple resource-fork extensions.

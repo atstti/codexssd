@@ -5,6 +5,7 @@
     <key>CFBundleIdentifier</key><string>app.diskspace.mac</string>
     <key>CFBundleName</key><string>DiskSpace</string>
     <key>CFBundleDisplayName</key><string>DiskSpace</string>
+    <key>CFBundleIconFile</key><string>DiskSpace.icns</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>1.1.0</string>
     <key>CFBundleVersion</key><string>2</string>
