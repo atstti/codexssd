@@ -32,6 +32,9 @@ jobs:
           test -x build/DiskSpace.app/Contents/MacOS/DiskSpace
           codesign --verify --strict build/DiskSpace.app
           file build/DiskSpace.app/Contents/MacOS/DiskSpace
+          ditto -x -k build/DiskSpace-macOS.zip build/extraction-check
+          test -x build/extraction-check/DiskSpace.app/Contents/MacOS/DiskSpace
+          codesign --verify --strict build/extraction-check/DiskSpace.app
       - uses: actions/upload-artifact@v4
         with:
           name: DiskSpace-macOS-${{ matrix.arch }}
