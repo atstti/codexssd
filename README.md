@@ -52,6 +52,6 @@ bash scripts/build-app.sh
 
 ## 検証状況
 
-初期実装環境はLinuxで、Swift/macOS SDKなしです。macOSでの `swift test`・ビルド・GUI起動・実ドライブの接続取り外し・Finder比較は**未確認**です。Actionsはテスト、releaseビルド、バンドル構造、署名検証とZIP保存を行いますが、GUI操作は検証しません。ワークフロー自体もGitHub上での実行が必要です。
+初期実装環境はLinuxです。GitHub ActionsのmacOSランナーで `swift test`、releaseビルド、バンドル構造、アドホック署名検証、ZIP生成を実行しています。実行結果は[ビルド記録](https://github.com/atstti/codexssd/actions/runs/42068780034)で確認できます。GUI起動・実ドライブの接続取り外し・Finder比較は**未確認**です。ActionsはGUI操作を検証しません。
 
 テストには上記の観測値、0と取得失敗の区別、十進単位、整数オーバーフローを含めています。Macでアプリを開いた後、メニューバー表示・対象切り替え・コピー内容・30秒更新・外付け取り外し時の起動ディスク復帰を確認してください。
