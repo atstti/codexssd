@@ -1,0 +1,40 @@
+name: Build DiskSpace for macOS
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Test and package (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: swift test
+      - name: Build application bundle and ZIP
+        run: bash scripts/build-app.sh
+      - name: Verify bundle
+        run: |
+          plutil -lint build/DiskSpace.app/Contents/Info.plist
+          test -x build/DiskSpace.app/Contents/MacOS/DiskSpace
+          codesign --verify --strict build/DiskSpace.app
+          file build/DiskSpace.app/Contents/MacOS/DiskSpace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DiskSpace-macOS-${{ matrix.arch }}
+          path: build/DiskSpace-macOS.zip
+          if-no-files-found: error
+          retention-days: 14
