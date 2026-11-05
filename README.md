@@ -4,6 +4,8 @@ macOS 13以降のネイティブ・メニューバーアプリです。内蔵・
 
 ## アプリを入手して使う
 
+ZIP内のZIPを展開できない場合は **Actions → Package DiskSpace DMG → Run workflow** で、成功したビルドの実行IDとMacのアーキテクチャを指定します。Artifactsの `DiskSpace-DMG-arm64`（Intelは `DiskSpace-DMG-x86_64`）を取得し、外側のZIPを展開します。中の **DiskSpace-macOS.dmg** を開き、**DiskSpace.app** を **Applications** へドラッグしてください。DMGはmacOSランナーで作成後に実際にマウントし、中のアプリの署名を検証しています。DMGでもAppleの公証は行っていません。
+
 このソースをGitHubに反映後、リポジトリの **Actions → Build DiskSpace for macOS → Run workflow** を選びます（push時にも自動実行）。完了した実行の **Artifacts** から、Apple Siliconなら `DiskSpace-macOS-arm64`、Intel Macなら `DiskSpace-macOS-x86_64` をダウンロードしてください。
 
 ダウンロードしたアーティファクトZIPを展開し、中の `DiskSpace-macOS.zip` も展開します。**DiskSpace.app** をApplicationsなどへ移し、ダブルクリックするとメニューバーに「残り … GB」が表示されます。ターミナルやStart.commandを起動する方式ではありません。クリックすると対象名、容量一覧、表示対象の切り替え、比較情報のコピー、手動更新、終了が利用できます。
