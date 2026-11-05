@@ -45,3 +45,11 @@ jobs:
           path: build/DiskSpace-macOS.zip
           if-no-files-found: error
           retention-days: 14
+      - name: Build and verify DMG
+        run: bash scripts/build-dmg.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DiskSpace-DMG-${{ matrix.arch }}
+          path: build/DiskSpace-macOS.dmg
+          if-no-files-found: error
+          retention-days: 14

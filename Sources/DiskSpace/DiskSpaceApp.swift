@@ -57,7 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.button?.title = "残り 取得中…"
+        item.button?.title = "残り（推定）取得中…"
         item.button?.target = self
         item.button?.action = #selector(toggle)
         popover.behavior = .transient
@@ -65,8 +65,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover.contentViewController = NSHostingController(rootView: DiskView(model: model))
         model.didChange = { [weak self] in
             guard let self else { return }
-            self.item.button?.title = "残り \(Capacity.display(self.model.selected?.available))"
-            self.item.button?.toolTip = self.model.selected.map { "\($0.name) — \($0.path)" }
+            self.item.button?.title = "残り（推定）\(Capacity.display(self.model.selected?.important))"
+            self.item.button?.toolTip = self.model.selected.map { "\($0.name) — \($0.path)\n重要なファイル用（推定）" }
         }
         timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in self?.model.refresh() }
         for name in [NSWorkspace.didMountNotification, NSWorkspace.didUnmountNotification, NSWorkspace.didRenameVolumeNotification, NSWorkspace.didWakeNotification] {
@@ -94,6 +94,8 @@ struct DiskView: View {
             Text("DiskSpace").font(.title2.bold())
             Text("メニューバーの対象：\(model.selected?.name ?? "取得中…")")
                 .font(.callout).textSelection(.enabled)
+            Text("表示する容量：重要なファイル用（推定）")
+                .font(.caption).foregroundColor(.secondary)
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     ForEach(model.volumes) { volume in

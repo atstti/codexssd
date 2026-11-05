@@ -4,11 +4,15 @@ macOS 13以降のネイティブ・メニューバーアプリです。内蔵・
 
 ## アプリを入手して使う
 
+バージョン1.1.0から、メニューバーには選択したボリュームの「重要なファイル用（推定）」を表示します。取得失敗時は「取得できません」と表示します。一覧の「現在の空き」と比較情報は引き続き確認できます。Finderとの一致は保証しません。
+
+最新ビルドのArtifactsにある `DiskSpace-DMG-arm64`（Apple Silicon）または `DiskSpace-DMG-x86_64`（Intel）からDMGを取得できます。外側のZIPを展開し、中のDMGを開いてアプリをApplicationsへドラッグしてください。更新時は古いDiskSpaceをメニューの「終了」で終了してからアプリを置き換えます。
+
 ZIP内のZIPを展開できない場合は **Actions → Package DiskSpace DMG → Run workflow** で、成功したビルドの実行IDとMacのアーキテクチャを指定します。Artifactsの `DiskSpace-DMG-arm64`（Intelは `DiskSpace-DMG-x86_64`）を取得し、外側のZIPを展開します。中の **DiskSpace-macOS.dmg** を開き、**DiskSpace.app** を **Applications** へドラッグしてください。DMGはmacOSランナーで作成後に実際にマウントし、中のアプリの署名を検証しています。DMGでもAppleの公証は行っていません。
 
 このソースをGitHubに反映後、リポジトリの **Actions → Build DiskSpace for macOS → Run workflow** を選びます（push時にも自動実行）。完了した実行の **Artifacts** から、Apple Siliconなら `DiskSpace-macOS-arm64`、Intel Macなら `DiskSpace-macOS-x86_64` をダウンロードしてください。
 
-ダウンロードしたアーティファクトZIPを展開し、中の `DiskSpace-macOS.zip` も展開します。**DiskSpace.app** をApplicationsなどへ移し、ダブルクリックするとメニューバーに「残り … GB」が表示されます。ターミナルやStart.commandを起動する方式ではありません。クリックすると対象名、容量一覧、表示対象の切り替え、比較情報のコピー、手動更新、終了が利用できます。
+ダウンロードしたアーティファクトZIPを展開し、中の `DiskSpace-macOS.zip` も展開します。**DiskSpace.app** をApplicationsなどへ移し、ダブルクリックするとメニューバーに「残り（推定）… GB」が表示されます。ターミナルやStart.commandを起動する方式ではありません。クリックすると対象名、容量一覧、表示対象の切り替え、比較情報のコピー、手動更新、終了が利用できます。
 
 ビルドはアーキテクチャごとで、Developer ID署名・Appleの公証はしていません（アドホック署名のみ）。ダウンロードしたアプリがGatekeeperに止められた場合は、出所を確認したうえでmacOSの「システム設定 → プライバシーとセキュリティ → このまま開く」を使用してください。組織のポリシーによっては起動できません。一般配布には別途Developer ID署名と公証が必要です。
 
@@ -34,8 +38,8 @@ bash scripts/build-app.sh
 | 表示 | 取得方法・意味 |
 | --- | --- |
 | 総容量 | `statfs.f_blocks × f_bsize` |
-| 現在の空き | `statfs.f_bavail × f_bsize`。dfのAvailableと比較する値。メニューバーもこの値 |
-| 重要なファイル用（推定） | Foundationの `volumeAvailableCapacityForImportantUsage`。OSによる推定値 |
+| 現在の空き | `statfs.f_bavail × f_bsize`。dfのAvailableと比較する値 |
+| 重要なファイル用（推定） | Foundationの `volumeAvailableCapacityForImportantUsage`。OSによる推定値。メニューバーはこの値 |
 
 内部はバイト単位、表示は十進（1 GB = 1,000,000,000バイト）で小数第2位です。0は `0.00 GB`、取得失敗は `取得できません` と表示します。固定値の加算やFinderに合わせる補正はしません。推定値はFinderの「空き領域」や「パージ可能」そのものではなく、その差をパージ可能容量とも断定しません。
 
