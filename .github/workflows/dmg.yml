@@ -1,0 +1,37 @@
+name: Package DiskSpace DMG
+on:
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: Successful build run ID
+        required: true
+        default: '42070835793'
+      arch:
+        description: Mac architecture
+        type: choice
+        options: [arm64, x86_64]
+        default: arm64
+permissions:
+  contents: read
+  actions: read
+jobs:
+  package:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: DiskSpace-macOS-${{ inputs.arch }}
+          run-id: ${{ inputs.source_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: build/download
+      - name: Extract verified application
+        run: ditto -x -k build/download/DiskSpace-macOS.zip build
+      - name: Build and verify DMG
+        run: bash scripts/build-dmg.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DiskSpace-DMG-${{ inputs.arch }}
+          path: build/DiskSpace-macOS.dmg
+          if-no-files-found: error
+          retention-days: 14

@@ -2,6 +2,10 @@ name: Build DiskSpace for macOS
 
 on:
   push:
+    paths-ignore:
+      - '.github/workflows/dmg.yml'
+      - 'scripts/build-dmg.sh'
+      - '**/*.md'
   pull_request:
   workflow_dispatch:
 
