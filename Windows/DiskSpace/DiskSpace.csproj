@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>DiskSpace</AssemblyName>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <ApplicationIcon Condition="Exists('DiskSpace.ico')">DiskSpace.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../DiskSpace.Core/DiskSpace.Core.csproj" /></ItemGroup>

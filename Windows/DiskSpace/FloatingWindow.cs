@@ -14,12 +14,19 @@ internal sealed class FloatingWindow : Form
         DrawMode = DrawMode.OwnerDrawFixed, ItemHeight = 24 };
     private readonly Button pin;
     private readonly Button refresh;
+    private readonly TrackBar opacitySlider = new() { Minimum = 40, Maximum = 100, Value = 100,
+        TickStyle = TickStyle.None, SmallChange = 5, LargeChange = 10, AutoSize = false };
+    private readonly Label opacityValue = new() { Text = "100%", TextAlign = ContentAlignment.MiddleRight };
+    private readonly Dictionary<Control, Rectangle> layoutBounds = new();
+    private readonly string settingsPath;
+    private const int DesignWidth = 392;
+    private const int DesignHeight = 410;
     private VolumeSnapshot? current;
     private bool rendering;
     private bool loading;
     private readonly ToolTip tips = new();
     private static string SettingsPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DiskSpace", "window.json");
-    private sealed record Placement(int X, int Y, bool Pinned);
+    private sealed record Placement(int X, int Y, bool Pinned, int Width = 392, int Height = 410, int Opacity = 100);
     private sealed record DriveChoice(string Path, string Name) { public override string ToString() => Name; }
     public event Action<string>? Selected;
     public event Action? RefreshRequested;
@@ -28,12 +35,15 @@ internal sealed class FloatingWindow : Form
 
     [DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(IntPtr window, int attribute, ref int value, int size);
 
-    public FloatingWindow()
+    public FloatingWindow(string? settingsFile = null)
     {
+        settingsPath = settingsFile ?? SettingsPath;
         Text = "DiskSpace — フローティング";
         AccessibleName = "DiskSpace フローティング容量モニター";
         Icon = AppIcon.Create();
-        ClientSize = new Size(392, 372);
+        ClientSize = new Size(DesignWidth, DesignHeight);
+        MinimumSize = new Size(314, 328);
+        ResizeRedraw = true;
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
         TopMost = true;
@@ -66,6 +76,7 @@ internal sealed class FloatingWindow : Form
             if (!rendering && drives.SelectedItem is DriveChoice choice) Selected?.Invoke(choice.Path);
         };
         Controls.Add(drives);
+        layoutBounds[drives] = new Rectangle(22, 66, 348, 30);
         refresh = MakeButton("更新", new Rectangle(22, 318, 78, 32));
         refresh.Click += (_, _) => RefreshRequested?.Invoke();
         var details = MakeButton("詳細・比較", new Rectangle(110, 318, 160, 32));
@@ -77,6 +88,22 @@ internal sealed class FloatingWindow : Form
             try { Clipboard.SetText(current.Comparison); tips.Show("比較情報をコピーしました", copy, 0, -30, 1500); }
             catch (ExternalException) { tips.Show("コピーできません。再度お試しください", copy, 0, -30, 2000); }
         };
+        var opacityLabel = new Label { Text = "不透明度", ForeColor = Muted, TextAlign = ContentAlignment.MiddleLeft };
+        Controls.Add(opacityLabel);
+        layoutBounds[opacityLabel] = new Rectangle(22, 362, 80, 26);
+        opacitySlider.BackColor = BackColor;
+        opacitySlider.AccessibleName = "パネルの不透明度（40%から100%）";
+        Controls.Add(opacitySlider);
+        layoutBounds[opacitySlider] = new Rectangle(104, 362, 218, 26);
+        Controls.Add(opacityValue);
+        layoutBounds[opacityValue] = new Rectangle(326, 362, 44, 26);
+        opacitySlider.ValueChanged += (_, _) =>
+        {
+            Opacity = opacitySlider.Value / 100d;
+            opacityValue.Text = $"{opacitySlider.Value}%";
+        };
+        opacitySlider.MouseUp += (_, _) => SavePlacement();
+        opacitySlider.KeyUp += (_, _) => SavePlacement();
         Shown += (_, _) => RestorePlacement();
         Deactivate += (_, _) => SavePlacement();
         FormClosing += (_, e) =>
@@ -84,8 +111,8 @@ internal sealed class FloatingWindow : Form
             SavePlacement();
             if (!AllowExit && e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); }
         };
-        AutoScaleDimensions = new SizeF(96, 96);
-        AutoScaleMode = AutoScaleMode.Dpi;
+        AutoScaleMode = AutoScaleMode.None;
+        LayoutContent();
     }
 
     private Button MakeButton(string text, Rectangle bounds)
@@ -95,6 +122,7 @@ internal sealed class FloatingWindow : Form
         button.FlatAppearance.BorderColor = Color.FromArgb(44, 64, 84);
         button.FlatAppearance.MouseOverBackColor = Color.FromArgb(39, 61, 79);
         Controls.Add(button);
+        layoutBounds[button] = bounds;
         return button;
     }
 
@@ -125,11 +153,16 @@ internal sealed class FloatingWindow : Form
         base.OnPaint(e);
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
-        g.ScaleTransform(DeviceDpi / 96f, DeviceDpi / 96f);
-        using var background = new LinearGradientBrush(new Rectangle(0, 0, 392, 372), Color.FromArgb(23, 40, 59), Color.FromArgb(10, 18, 30), 75f);
-        g.FillRectangle(background, 0, 0, 392, 372);
+        using var background = new LinearGradientBrush(ClientRectangle, Color.FromArgb(23, 40, 59), Color.FromArgb(10, 18, 30), 75f);
+        g.FillRectangle(background, ClientRectangle);
         using var edge = new Pen(Color.FromArgb(50, 72, 91));
-        g.DrawRectangle(edge, 0, 0, 391, 371);
+        g.DrawRectangle(edge, 0, 0, ClientSize.Width - 1, ClientSize.Height - 1);
+        using var grip = new Pen(Muted);
+        for (var i = 0; i < 3; i++) g.DrawLine(grip, ClientSize.Width - 6 - i * 4, ClientSize.Height - 5,
+            ClientSize.Width - 5, ClientSize.Height - 6 - i * 4);
+        var (scale, offsetX, offsetY) = ContentTransform();
+        g.TranslateTransform(offsetX, offsetY);
+        g.ScaleTransform(scale, scale);
         using var accent = new SolidBrush(Teal);
         g.FillEllipse(accent, 22, 25, 7, 7);
         Draw(g, "DISKSPACE", 39, 17, 170, 26, 13, Ink, FontStyle.Bold);
@@ -167,6 +200,8 @@ internal sealed class FloatingWindow : Form
         base.OnHandleCreated(e);
         var preference = 2; // Rounded corners on Windows 11; ignored on earlier versions.
         DwmSetWindowAttribute(Handle, 33, ref preference, sizeof(int));
+        MinimumSize = new Size((int)(314 * DeviceDpi / 96f), (int)(328 * DeviceDpi / 96f));
+        ClientSize = new Size((int)(DesignWidth * DeviceDpi / 96f), (int)(DesignHeight * DeviceDpi / 96f));
     }
 
     protected override void WndProc(ref Message message)
@@ -175,16 +210,72 @@ internal sealed class FloatingWindow : Form
         if (message.Msg == 0x0084 && message.Result == (IntPtr)1)
         {
             var position = PointToClient(new Point(unchecked((short)(message.LParam.ToInt64() & 0xffff)), unchecked((short)((message.LParam.ToInt64() >> 16) & 0xffff))));
-            if (position.Y < 54 * DeviceDpi / 96 && position.X < 225 * DeviceDpi / 96) message.Result = (IntPtr)2;
+            var edge = Math.Max(6, 8 * DeviceDpi / 96);
+            var left = position.X < edge;
+            var right = position.X >= ClientSize.Width - edge;
+            var top = position.Y < edge;
+            var bottom = position.Y >= ClientSize.Height - edge;
+            var hit = (left, right, top, bottom) switch
+            {
+                (true, _, true, _) => 13, (_, true, true, _) => 14,
+                (true, _, _, true) => 16, (_, true, _, true) => 17,
+                (true, _, _, _) => 10, (_, true, _, _) => 11,
+                (_, _, true, _) => 12, (_, _, _, true) => 15, _ => 1
+            };
+            var (scale, x, y) = ContentTransform();
+            if (hit == 1 && position.Y >= y && position.Y < y + 54 * scale && position.X < x + 225 * scale) hit = 2;
+            message.Result = (IntPtr)hit;
         }
+    }
+
+    private (float Scale, float X, float Y) ContentTransform()
+    {
+        var scale = Math.Max(0.1f, Math.Min(ClientSize.Width / (float)DesignWidth, ClientSize.Height / (float)DesignHeight));
+        return (scale, (ClientSize.Width - DesignWidth * scale) / 2, (ClientSize.Height - DesignHeight * scale) / 2);
+    }
+
+    protected override void OnResize(EventArgs e)
+    {
+        base.OnResize(e);
+        LayoutContent();
+    }
+
+    protected override void OnResizeEnd(EventArgs e)
+    {
+        base.OnResizeEnd(e);
+        SavePlacement();
+    }
+
+    private void LayoutContent()
+    {
+        if (layoutBounds is null) return;
+        var (scale, x, y) = ContentTransform();
+        foreach (var (control, bounds) in layoutBounds)
+        {
+            control.SetBounds((int)(x + bounds.X * scale), (int)(y + bounds.Y * scale),
+                Math.Max(1, (int)(bounds.Width * scale)), Math.Max(1, (int)(bounds.Height * scale)));
+            control.Font = new Font("Yu Gothic UI", 9 * scale * 96 / DeviceDpi);
+            // Fonts assigned here are owned by this form; inherited fonts are not disposed.
+            if (control.Tag is Font owned) owned.Dispose();
+            control.Tag = control.Font;
+        }
+        drives.ItemHeight = Math.Max(16, (int)(24 * scale));
+        Invalidate();
     }
 
     private void RestorePlacement()
     {
         Placement? placement = null;
-        try { if (File.Exists(SettingsPath)) placement = JsonSerializer.Deserialize<Placement>(File.ReadAllText(SettingsPath)); }
+        try { if (File.Exists(settingsPath)) placement = JsonSerializer.Deserialize<Placement>(File.ReadAllText(settingsPath)); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException) { }
         var area = Screen.FromPoint(Cursor.Position).WorkingArea;
+        if (placement is not null)
+        {
+            var dpi = DeviceDpi / 96d;
+            ClientSize = new Size(Math.Min(area.Width, (int)(Math.Clamp(placement.Width, 314, 1568) * dpi)),
+                Math.Min(area.Height, (int)(Math.Clamp(placement.Height, 328, 1640) * dpi)));
+            opacitySlider.Value = Math.Clamp(placement.Opacity, 40, 100);
+        }
         Location = new Point(area.Right - Width - 24, area.Bottom - Height - 24);
         if (placement is not null)
         {
@@ -200,15 +291,20 @@ internal sealed class FloatingWindow : Form
         if (!Visible) return;
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
-            File.WriteAllText(SettingsPath, JsonSerializer.Serialize(new Placement(Left, Top, TopMost)));
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(settingsPath))!);
+            File.WriteAllText(settingsPath, JsonSerializer.Serialize(new Placement(Left, Top, TopMost,
+                (int)Math.Round(ClientSize.Width * 96d / DeviceDpi), (int)Math.Round(ClientSize.Height * 96d / DeviceDpi), opacitySlider.Value)));
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
     }
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) tips.Dispose();
+        if (disposing)
+        {
+            tips.Dispose();
+            foreach (var control in layoutBounds.Keys) if (control.Tag is Font owned) owned.Dispose();
+        }
         base.Dispose(disposing);
     }
 }

@@ -28,8 +28,32 @@ internal static class Program
                 if (!window.Visible || !window.IsHandleCreated) throw new InvalidOperationException("Window did not open");
                 Clipboard.SetText(boot.Comparison);
                 if (Clipboard.GetText() != boot.Comparison) throw new InvalidOperationException("Clipboard mismatch");
-                using var floating = new FloatingWindow();
+                var settingsDirectory = Path.Combine(Path.GetTempPath(), "DiskSpaceSmoke-" + Guid.NewGuid());
+                var settingsFile = Path.Combine(settingsDirectory, "window.json");
+                using var floating = new FloatingWindow(settingsFile);
                 floating.Render(volumes, boot.Path, false);
+                floating.ClientSize = new Size(588, 615);
+                Application.DoEvents();
+                if (floating.Controls.Cast<Control>().Any(c => !floating.ClientRectangle.Contains(c.Bounds)))
+                    throw new InvalidOperationException("Control clipped after resize");
+                floating.Controls.OfType<TrackBar>().Single().Value = 65;
+                if (Math.Abs(floating.Opacity - 0.65) > 0.01) throw new InvalidOperationException("Opacity did not change");
+                floating.SavePlacement();
+                using (var restored = new FloatingWindow(settingsFile))
+                {
+                    restored.Show();
+                    Application.DoEvents();
+                    if (Math.Abs(restored.Opacity - 0.65) > 0.01 || restored.ClientSize != floating.ClientSize)
+                        throw new InvalidOperationException("Size/opacity did not restore");
+                    restored.AllowExit = true;
+                    restored.Close();
+                }
+                floating.ClientSize = floating.MinimumSize;
+                Application.DoEvents();
+                if (floating.Controls.Cast<Control>().Any(c => !floating.ClientRectangle.Contains(c.Bounds)))
+                    throw new InvalidOperationException("Control clipped at minimum size");
+                floating.ClientSize = new Size(392, 410);
+                floating.Controls.OfType<TrackBar>().Single().Value = 100;
                 floating.Show();
                 Application.DoEvents();
                 if (!floating.Visible || !floating.TopMost || floating.FormBorderStyle != FormBorderStyle.None)
@@ -52,8 +76,9 @@ internal static class Program
                 if (!floating.Visible) throw new InvalidOperationException("Floating panel did not restore");
                 floating.AllowExit = true;
                 floating.Close();
+                Directory.Delete(settingsDirectory, true);
                 window.Close();
-                File.WriteAllText("smoke-result.txt", $"PASS: actual startup drive API, details and floating window display, borderless/topmost properties, floating hide/restore, zero/unavailable rendering, clipboard round trip. Preview uses sample values.\n{boot.Comparison}");
+                File.WriteAllText("smoke-result.txt", $"PASS: actual startup drive API, details and floating display, borderless/topmost, hide/restore, zero/unavailable rendering, clipboard, resized/minimum control bounds, 65% opacity, size/opacity persistence. Preview uses sample values.\n{boot.Comparison}");
                 Environment.ExitCode = 0;
             }
             catch (Exception error)
