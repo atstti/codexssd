@@ -32,6 +32,8 @@ internal static class Program
                 var settingsFile = Path.Combine(settingsDirectory, "window.json");
                 using var floating = new FloatingWindow(settingsFile);
                 floating.Render(volumes, boot.Path, false);
+                floating.Show();
+                Application.DoEvents();
                 floating.ClientSize = new Size(588, 615);
                 Application.DoEvents();
                 if (floating.Controls.Cast<Control>().Any(c => !floating.ClientRectangle.Contains(c.Bounds)))
