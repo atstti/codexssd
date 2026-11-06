@@ -9,10 +9,12 @@ void Check(bool condition, string name)
 }
 var observed = Capacity.FromBlocks(16_242_320, 1_024);
 Check(observed == 16_632_135_680, "observed byte conversion remains exact");
-Check(Capacity.Display(0) != "取得できません" && Capacity.Display(null) == "取得できません", "zero differs from unavailable");
-Check(Capacity.Display(394_110_242_816).Replace('\u00a0', ' ') == "367 GB" &&
-      Capacity.Display(998_976_253_952).Replace('\u00a0', ' ') == "930 GB", "user screenshot matches Windows free and total labels");
-Check(Capacity.Display(512).Contains("512") && Capacity.Display(536_870_912).Contains("MB"), "sub-GB capacities retain meaningful units");
+Check(Capacity.Display(0) == "0.00 バイト" && Capacity.Display(null) == "取得できません", "zero differs from unavailable");
+Check(Capacity.Display(394_110_242_816) == "367.04 GB" &&
+      Capacity.Display(998_976_253_952) == "930.37 GB", "user screenshot bytes use binary units with two decimals");
+Check(Capacity.Display(512) == "512.00 バイト" && Capacity.Display(536_870_912) == "512.00 MB", "sub-GB capacities retain meaningful units");
+Check(Capacity.Display(1_073_741_824) == "1.00 GB" &&
+      Capacity.Display(1_099_511_627_776) == "1.00 TB", "binary unit boundaries preserve two decimals");
 Check(Capacity.FromBlocks(ulong.MaxValue, 2) == null, "overflow is unavailable");
 Check(Capacity.FreeRatio(0, 100) == 0 && Capacity.FreeRatio(null, 100) == null &&
       Capacity.FreeRatio(10, 0) == null && Capacity.FreeRatio(150, 100) == 1 &&

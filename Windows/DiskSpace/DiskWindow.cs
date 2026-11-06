@@ -55,7 +55,7 @@ internal sealed class DiskWindow : Form
         layout.Controls.Add(new Label
         {
             Dock = DockStyle.Fill,
-            Text = "保存に使える空き：GetDiskFreeSpaceExW が返す現在の利用者向けの空き容量（通知領域にも表示）。\nディスク全体の空き：同APIが返す全体の空き容量。クォータ等により異なる場合があります。\nMacの「重要なファイル用（推定）」とは別の指標です。Windowsの形式で表示（1024進）。30秒ごとに更新。\n右上の×は通知領域へ格納します。終了は「終了」から。アイコンが見えない場合はタスクバーの「∧」を確認してください。",
+            Text = "保存に使える空き：GetDiskFreeSpaceExW が返す現在の利用者向けの空き容量（通知領域にも表示）。\nディスク全体の空き：同APIが返す全体の空き容量。クォータ等により異なる場合があります。\nMacの「重要なファイル用（推定）」とは別の指標です。Windowsと同じ1024進、小数第2位まで表示。30秒ごとに更新。\n右上の×は通知領域へ格納します。終了は「終了」から。アイコンが見えない場合はタスクバーの「∧」を確認してください。",
             ForeColor = Color.FromArgb(65, 75, 90)
         }, 0, 2);
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill };
