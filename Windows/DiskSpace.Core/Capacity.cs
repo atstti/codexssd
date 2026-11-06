@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace DiskSpace.Core;
 
@@ -8,9 +10,18 @@ public static class Capacity
         available.HasValue && total.HasValue && total.Value > 0
             ? Math.Clamp((double)available.Value / total.Value, 0, 1) : null;
 
-    public static string Display(ulong? bytes) => bytes.HasValue
-        ? (bytes.Value / 1_000_000_000m).ToString("F2", CultureInfo.InvariantCulture) + " GB"
-        : "取得できません";
+    [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
+    private static extern int StrFormatByteSizeEx(ulong bytes, uint flags, StringBuilder buffer, uint bufferSize);
+
+    public static string Display(ulong? bytes)
+    {
+        if (!bytes.HasValue) return "取得できません";
+        var buffer = new StringBuilder(128);
+        // Use the Windows Shell formatter: binary units and truncation of undisplayed digits.
+        // Small capacities keep meaningful precision rather than displaying everything as 0 GB.
+        var result = StrFormatByteSizeEx(bytes.Value, 2, buffer, (uint)buffer.Capacity);
+        return result >= 0 ? buffer.ToString() : "取得できません";
+    }
 
     public static ulong? FromBlocks(ulong blocks, ulong size)
     {
@@ -32,7 +43,8 @@ public sealed record VolumeSnapshot(string Path, string Name, DateTimeOffset Mea
         保存に使える空き (lpFreeBytesAvailableToCaller): {Raw(AvailableToCaller)} bytes
         ディスク全体の空き (lpTotalNumberOfFreeBytes): {Raw(TotalFree)} bytes
         取得状況: {Error ?? "成功"}
-        表示単位: 1 GB = 1,000,000,000 bytes
+        表示形式: Windows Shell StrFormatByteSizeEx（1024進、表示桁未満は切り捨て）
+        1 GB = 1,073,741,824 bytes。必要に応じてKB/MB/TB等で表示。
         保存に使える空きは現在の利用者向け。クォータ等により全体の空きと異なります。
         エクスプローラーとの完全一致やMacの推定値との同等性は保証しません。
         """;
