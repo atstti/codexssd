@@ -260,22 +260,22 @@ internal sealed class FloatingWindow : Form
         SuspendLayout();
         try
         {
-        var (scale, x, y) = ContentTransform();
-        // Quantize to quarter points and bound the cache even during long resize sessions.
-        var fontKey = Math.Clamp((int)Math.Round(9 * scale * 96 / Math.Max(96, DeviceDpi) * 4), 24, 384);
-        if (!layoutFonts.TryGetValue(fontKey, out var font))
-        {
-            font = new Font("Yu Gothic UI", fontKey / 4f);
-            layoutFonts.Add(fontKey, font);
-        }
-        foreach (var (control, bounds) in layoutBounds)
-        {
-            if (!control.Font.Equals(font)) control.Font = font;
-            control.SetBounds((int)(x + bounds.X * scale), (int)(y + bounds.Y * scale),
-                Math.Max(1, (int)(bounds.Width * scale)), Math.Max(1, (int)(bounds.Height * scale)));
-        }
-        drives.ItemHeight = Math.Max(16, (int)(24 * scale));
-        Invalidate();
+            var (scale, x, y) = ContentTransform();
+            // Quantize to quarter points and bound the cache even during long resize sessions.
+            var fontKey = Math.Clamp((int)Math.Round(9 * scale * 96 / Math.Max(96, DeviceDpi) * 4), 24, 384);
+            if (!layoutFonts.TryGetValue(fontKey, out var font))
+            {
+                font = new Font("Yu Gothic UI", fontKey / 4f);
+                layoutFonts.Add(fontKey, font);
+            }
+            foreach (var (control, bounds) in layoutBounds)
+            {
+                if (!control.Font.Equals(font)) control.Font = font;
+                control.SetBounds((int)(x + bounds.X * scale), (int)(y + bounds.Y * scale),
+                    Math.Max(1, (int)(bounds.Width * scale)), Math.Max(1, (int)(bounds.Height * scale)));
+            }
+            drives.ItemHeight = Math.Max(16, (int)(24 * scale));
+            Invalidate();
         }
         finally
         {
