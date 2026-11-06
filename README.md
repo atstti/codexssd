@@ -20,9 +20,9 @@ dotnet run --project Windows/DiskSpace
 dotnet publish Windows/DiskSpace -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o build/windows-package
 ```
 
-Actionsでは容量変換などの5件のテストに加え、配布exeで実際の起動ドライブ取得、ウィンドウ生成・表示、クリップボードの読み書きをスモークテストします。対話的な画面操作・実機の外付け接続/取り外しは別途確認が必要です。署名していないためSmartScreenで止められる場合があります。詳細は [Windowsの日本語説明](Windows/README-ja.txt) を参照してください。
+Actionsでは容量変換・ゲージ比率などの6件のテストに加え、配布exeで実際の起動ドライブ取得、ウィンドウ生成・表示、クリップボードの読み書きをスモークテストします。対話的な画面操作・実機の外付け接続/取り外しは別途確認が必要です。署名していないためSmartScreenで止められる場合があります。詳細は [Windowsの日本語説明](Windows/README-ja.txt) を参照してください。
 
-Windows版1.0.0は上記の自動検証に成功しています。[検証記録](Windows/TESTING.md)で確認済み・未確認の範囲を確認できます。
+Windows版1.1.0は上記の自動検証に成功しています。[検証記録](Windows/TESTING.md)で確認済み・未確認の範囲を確認できます。
 
 ## アプリを入手して使う
 
