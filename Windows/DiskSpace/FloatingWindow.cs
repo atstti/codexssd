@@ -10,7 +10,8 @@ internal sealed class FloatingWindow : Form
     private static readonly Color Ink = Color.FromArgb(229, 240, 250);
     private static readonly Color Muted = Color.FromArgb(137, 158, 180);
     private static readonly Color Teal = Color.FromArgb(51, 224, 203);
-    private readonly ComboBox drives = new() { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat };
+    private readonly ComboBox drives = new() { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat,
+        DrawMode = DrawMode.OwnerDrawFixed, ItemHeight = 24 };
     private readonly Button pin;
     private readonly Button refresh;
     private VolumeSnapshot? current;
@@ -52,6 +53,14 @@ internal sealed class FloatingWindow : Form
         drives.BackColor = Color.FromArgb(28, 43, 61);
         drives.ForeColor = Ink;
         drives.AccessibleName = "表示するドライブ";
+        drives.DrawItem += (_, e) =>
+        {
+            using var background = new SolidBrush(drives.BackColor);
+            e.Graphics.FillRectangle(background, e.Bounds);
+            var name = e.Index >= 0 && e.Index < drives.Items.Count ? drives.Items[e.Index]?.ToString() ?? "" : "ドライブを取得中…";
+            TextRenderer.DrawText(e.Graphics, name, drives.Font, new Rectangle(e.Bounds.X + 6, e.Bounds.Y, e.Bounds.Width - 8, e.Bounds.Height),
+                Ink, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
+        };
         drives.SelectedIndexChanged += (_, _) =>
         {
             if (!rendering && drives.SelectedItem is DriveChoice choice) Selected?.Invoke(choice.Path);
