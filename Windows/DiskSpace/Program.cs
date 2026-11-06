@@ -28,8 +28,32 @@ internal static class Program
                 if (!window.Visible || !window.IsHandleCreated) throw new InvalidOperationException("Window did not open");
                 Clipboard.SetText(boot.Comparison);
                 if (Clipboard.GetText() != boot.Comparison) throw new InvalidOperationException("Clipboard mismatch");
+                using var floating = new FloatingWindow();
+                floating.Render(volumes, boot.Path, false);
+                floating.Show();
+                Application.DoEvents();
+                if (!floating.Visible || !floating.TopMost || floating.FormBorderStyle != FormBorderStyle.None)
+                    throw new InvalidOperationException("Floating panel did not open correctly");
+                // Render a deterministic preview with representative values, then restore actual data.
+                floating.Render([new(boot.Path, "System SSD (C:)（起動ドライブ）", DateTimeOffset.Now,
+                    1_000_000_000_000, 326_480_000_000, 326_480_000_000, null)], boot.Path, false);
+                using (var preview = new Bitmap(floating.Width, floating.Height))
+                {
+                    floating.DrawToBitmap(preview, new Rectangle(Point.Empty, preview.Size));
+                    preview.Save("floating-preview.png", System.Drawing.Imaging.ImageFormat.Png);
+                }
+                floating.Render([new(boot.Path, "Test", DateTimeOffset.Now, 1000, 0, 0, null)], boot.Path, false);
+                floating.Render([new(boot.Path, "Test", DateTimeOffset.Now, null, null, null, "unavailable")], boot.Path, false);
+                floating.Render(volumes, boot.Path, false);
+                floating.Hide();
+                if (floating.Visible) throw new InvalidOperationException("Floating panel did not hide");
+                floating.Show();
+                Application.DoEvents();
+                if (!floating.Visible) throw new InvalidOperationException("Floating panel did not restore");
+                floating.AllowExit = true;
+                floating.Close();
                 window.Close();
-                File.WriteAllText("smoke-result.txt", $"PASS: actual startup drive API, window creation/display, capacity rendering, clipboard round trip.\n{boot.Comparison}");
+                File.WriteAllText("smoke-result.txt", $"PASS: actual startup drive API, details and floating window display, borderless/topmost properties, floating hide/restore, zero/unavailable rendering, clipboard round trip. Preview uses sample values.\n{boot.Comparison}");
                 Environment.ExitCode = 0;
             }
             catch (Exception error)
@@ -73,6 +97,7 @@ internal sealed class TrayContext : ApplicationContext
 {
     private readonly NotifyIcon tray;
     private readonly DiskWindow window = new();
+    private readonly FloatingWindow floating = new();
     private readonly System.Windows.Forms.Timer timer = new() { Interval = 30_000 };
     private List<VolumeSnapshot> volumes = [];
     private string selected = VolumeReader.StartupPath;
@@ -83,7 +108,8 @@ internal sealed class TrayContext : ApplicationContext
     {
         tray = new NotifyIcon { Icon = AppIcon.Create(), Visible = true, Text = "DiskSpace — 取得中…" };
         var menu = new ContextMenuStrip();
-        menu.Items.Add("容量一覧を開く", null, (_, _) => Show());
+        menu.Items.Add("フローティングを表示", null, (_, _) => Show());
+        menu.Items.Add("詳細・比較情報", null, (_, _) => ShowDetails());
         menu.Items.Add("手動更新", null, async (_, _) => await Refresh());
         menu.Items.Add("終了", null, (_, _) => ExitThread());
         tray.ContextMenuStrip = menu;
@@ -92,14 +118,25 @@ internal sealed class TrayContext : ApplicationContext
         window.RefreshRequested += async () => await Refresh();
         window.ExitRequested += () => ExitThread();
         window.DevicesChanged += async () => await Refresh();
+        floating.Selected += path => { selected = path; UpdateDisplay(); };
+        floating.RefreshRequested += async () => await Refresh();
+        floating.DetailsRequested += ShowDetails;
         timer.Tick += async (_, _) => await Refresh();
         // Keep a hidden window handle alive to receive WM_DEVICECHANGE.
         _ = window.Handle;
+        floating.Show();
         timer.Start();
         _ = Refresh();
     }
 
     private void Show()
+    {
+        floating.Show();
+        floating.Activate();
+        _ = Refresh();
+    }
+
+    private void ShowDetails()
     {
         window.Show();
         window.WindowState = FormWindowState.Normal;
@@ -135,6 +172,7 @@ internal sealed class TrayContext : ApplicationContext
         var tip = $"DiskSpace {selected} 残り {Capacity.Display(volume?.AvailableToCaller)}";
         tray.Text = tip.Length > 63 ? tip[..63] : tip;
         window.Render(volumes, selected, refreshing);
+        floating.Render(volumes, selected, refreshing);
     }
 
     protected override void ExitThreadCore()
@@ -146,6 +184,9 @@ internal sealed class TrayContext : ApplicationContext
         tray.Dispose();
         icon?.Dispose();
         window.AllowExit = true;
+        floating.SavePlacement();
+        floating.AllowExit = true;
+        floating.Dispose();
         window.Dispose();
         base.ExitThreadCore();
     }

@@ -68,5 +68,7 @@ jobs:
         if: always()
         with:
           name: DiskSpace-Windows-test-results
-          path: smoke-result.txt
+          path: |
+            smoke-result.txt
+            floating-preview.png
           if-no-files-found: ignore

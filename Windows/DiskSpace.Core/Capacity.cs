@@ -4,6 +4,10 @@ namespace DiskSpace.Core;
 
 public static class Capacity
 {
+    public static double? FreeRatio(ulong? available, ulong? total) =>
+        available.HasValue && total.HasValue && total.Value > 0
+            ? Math.Clamp((double)available.Value / total.Value, 0, 1) : null;
+
     public static string Display(ulong? bytes) => bytes.HasValue
         ? (bytes.Value / 1_000_000_000m).ToString("F2", CultureInfo.InvariantCulture) + " GB"
         : "取得できません";
