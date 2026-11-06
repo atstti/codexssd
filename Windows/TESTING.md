@@ -1,11 +1,11 @@
-# Windows版 1.2.2 検証記録
+# Windows版 1.2.3 検証記録
 
-[GitHub Actions実行結果](https://github.com/atstti/codexssd/actions/runs/42230008076)
+[GitHub Actions実行結果](https://github.com/atstti/codexssd/actions/runs/42235924643)
 
 Windowsランナー上で次を確認しました。
 
-- 容量変換・0と取得失敗の区別・Windowsの1024進表示・オーバーフロー・比較情報の未丸め値、ゲージ比率など7件：成功。
-- ユーザーの画像の空き394,110,242,816バイト→367 GB、総容量998,976,253,952バイト→930 GBをWindows Shell APIで整形：成功。
+- 容量変換・0と取得失敗の区別・1024進・小数第2位表示・オーバーフロー・比較情報の未丸め値、ゲージ比率など8件：成功。
+- ユーザーの画像の空き394,110,242,816バイト→367.04 GB、総容量998,976,253,952バイト→930.37 GBを1024進・小数第2位で整形：成功。
 - 1 GB未満ではMB等を用い、0と取得失敗を区別：成功。
 - .NETを含むwin-x64自己完結型の配布EXEビルド：成功。
 - **配布EXE自身**の `--smoke-test`：成功。実際の起動ドライブをGetDiskFreeSpaceExWで取得し、DriveInfoの総容量と比較。
