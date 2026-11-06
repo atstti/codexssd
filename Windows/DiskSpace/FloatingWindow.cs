@@ -18,6 +18,11 @@ internal sealed class FloatingWindow : Form
         TickStyle = TickStyle.None, SmallChange = 5, LargeChange = 10, AutoSize = false };
     private readonly Label opacityValue = new() { Text = "100%", TextAlign = ContentAlignment.MiddleRight };
     private readonly Dictionary<Control, Rectangle> layoutBounds = new();
+    // WinForms may retain its current Font when a newly assigned Font is equal.
+    // Keep all cached fonts alive until after the child controls are disposed.
+    private readonly Dictionary<int, Font> layoutFonts = new();
+    private bool layingOut;
+    private bool fontsDisposed;
     private readonly string settingsPath;
     private const int DesignWidth = 392;
     private const int DesignHeight = 410;
@@ -65,6 +70,7 @@ internal sealed class FloatingWindow : Form
         drives.AccessibleName = "表示するドライブ";
         drives.DrawItem += (_, e) =>
         {
+            if (e.Bounds.Width <= 8 || e.Bounds.Height <= 0) return;
             using var background = new SolidBrush(drives.BackColor);
             e.Graphics.FillRectangle(background, e.Bounds);
             var name = e.Index >= 0 && e.Index < drives.Items.Count ? drives.Items[e.Index]?.ToString() ?? "" : "ドライブを取得中…";
@@ -151,6 +157,7 @@ internal sealed class FloatingWindow : Form
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
+        if (ClientSize.Width <= 1 || ClientSize.Height <= 1) return;
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
         using var background = new LinearGradientBrush(ClientRectangle, Color.FromArgb(23, 40, 59), Color.FromArgb(10, 18, 30), 75f);
@@ -248,19 +255,33 @@ internal sealed class FloatingWindow : Form
 
     private void LayoutContent()
     {
-        if (layoutBounds is null) return;
+        if (layoutBounds is null || layoutFonts is null || layingOut || IsDisposed || Disposing) return;
+        layingOut = true;
+        SuspendLayout();
+        try
+        {
         var (scale, x, y) = ContentTransform();
+        // Quantize to quarter points and bound the cache even during long resize sessions.
+        var fontKey = Math.Clamp((int)Math.Round(9 * scale * 96 / Math.Max(96, DeviceDpi) * 4), 24, 384);
+        if (!layoutFonts.TryGetValue(fontKey, out var font))
+        {
+            font = new Font("Yu Gothic UI", fontKey / 4f);
+            layoutFonts.Add(fontKey, font);
+        }
         foreach (var (control, bounds) in layoutBounds)
         {
+            if (!control.Font.Equals(font)) control.Font = font;
             control.SetBounds((int)(x + bounds.X * scale), (int)(y + bounds.Y * scale),
                 Math.Max(1, (int)(bounds.Width * scale)), Math.Max(1, (int)(bounds.Height * scale)));
-            control.Font = new Font("Yu Gothic UI", 9 * scale * 96 / DeviceDpi);
-            // Fonts assigned here are owned by this form; inherited fonts are not disposed.
-            if (control.Tag is Font owned) owned.Dispose();
-            control.Tag = control.Font;
         }
         drives.ItemHeight = Math.Max(16, (int)(24 * scale));
         Invalidate();
+        }
+        finally
+        {
+            ResumeLayout(false);
+            layingOut = false;
+        }
     }
 
     private void RestorePlacement()
@@ -300,11 +321,19 @@ internal sealed class FloatingWindow : Form
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing)
+        try
         {
-            tips.Dispose();
-            foreach (var control in layoutBounds.Keys) if (control.Tag is Font owned) owned.Dispose();
+            if (disposing) tips.Dispose();
+            base.Dispose(disposing);
         }
-        base.Dispose(disposing);
+        finally
+        {
+            if (disposing && !fontsDisposed)
+            {
+                fontsDisposed = true;
+                foreach (var font in layoutFonts.Values) font.Dispose();
+                layoutFonts.Clear();
+            }
+        }
     }
 }

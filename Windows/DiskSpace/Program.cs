@@ -36,11 +36,21 @@ internal static class Program
                 floating.Show();
                 Application.DoEvents();
                 // Width-only changes retain the same content scale; repaint every step.
-                for (var step = 0; step < 80; step++)
+                for (var step = 0; step < 240; step++)
                 {
-                    floating.ClientSize = new Size(392 + (step % 20) * 8, 410);
+                    var offset = (step % 20) * 8;
+                    floating.ClientSize = step switch
+                    {
+                        < 80 => new Size(392 + offset, 410),
+                        < 160 => new Size(392, 410 + offset),
+                        _ => new Size(392 + offset, 410 + offset)
+                    };
                     floating.Refresh();
-                    foreach (Control child in floating.Controls) child.Refresh();
+                    foreach (Control child in floating.Controls)
+                    {
+                        _ = child.Font.Height;
+                        child.Refresh();
+                    }
                     Application.DoEvents();
                 }
                 floating.ClientSize = new Size(588, 615);
@@ -89,7 +99,7 @@ internal static class Program
                 floating.Close();
                 Directory.Delete(settingsDirectory, true);
                 window.Close();
-                File.WriteAllText("smoke-result.txt", $"PASS: actual startup drive API, details and floating display, borderless/topmost, hide/restore, zero/unavailable rendering, clipboard, resized/minimum control bounds, 65% opacity, size/opacity persistence. Preview uses sample values.\n{boot.Comparison}");
+                File.WriteAllText("smoke-result.txt", $"PASS: actual startup drive API, details and floating display, borderless/topmost, hide/restore, zero/unavailable rendering, clipboard, 240 continuous width/height/proportional resizes with native control repaint and live font checks, minimum control bounds, 65% opacity, size/opacity persistence. Preview uses sample values.\n{boot.Comparison}");
                 Environment.ExitCode = 0;
             }
             catch (Exception error)
