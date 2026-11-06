@@ -34,6 +34,14 @@ internal static class Program
                 floating.Render(volumes, boot.Path, false);
                 floating.Show();
                 Application.DoEvents();
+                // Width-only changes retain the same content scale; repaint every step.
+                for (var step = 0; step < 80; step++)
+                {
+                    floating.ClientSize = new Size(392 + (step % 20) * 8, 410);
+                    floating.Refresh();
+                    foreach (Control child in floating.Controls) child.Refresh();
+                    Application.DoEvents();
+                }
                 floating.ClientSize = new Size(588, 615);
                 Application.DoEvents();
                 if (floating.Controls.Cast<Control>().Any(c => !floating.ClientRectangle.Contains(c.Bounds)))
