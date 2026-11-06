@@ -32,7 +32,6 @@ internal sealed class FloatingWindow : Form
         Text = "DiskSpace — フローティング";
         AccessibleName = "DiskSpace フローティング容量モニター";
         Icon = AppIcon.Create();
-        AutoScaleMode = AutoScaleMode.Dpi;
         ClientSize = new Size(392, 372);
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
@@ -76,6 +75,8 @@ internal sealed class FloatingWindow : Form
             SavePlacement();
             if (!AllowExit && e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); }
         };
+        AutoScaleDimensions = new SizeF(96, 96);
+        AutoScaleMode = AutoScaleMode.Dpi;
     }
 
     private Button MakeButton(string text, Rectangle bounds)
@@ -145,7 +146,7 @@ internal sealed class FloatingWindow : Form
     private static void Draw(Graphics g, string text, int x, int y, int width, int height, float size,
         Color color, FontStyle style = FontStyle.Regular, StringAlignment alignment = StringAlignment.Near)
     {
-        using var font = new Font("Yu Gothic UI", size, style, GraphicsUnit.Point);
+        using var font = new Font("Yu Gothic UI", size * 96 / 72, style, GraphicsUnit.Pixel);
         using var brush = new SolidBrush(color);
         using var format = new StringFormat { Alignment = alignment, LineAlignment = StringAlignment.Center,
             Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
