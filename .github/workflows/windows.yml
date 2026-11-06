@@ -1,0 +1,72 @@
+name: Build DiskSpace for Windows
+on:
+  push:
+    paths:
+      - 'Windows/**'
+      - '.github/workflows/windows.yml'
+  pull_request:
+    paths:
+      - 'Windows/**'
+      - '.github/workflows/windows.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Core tests
+        run: dotnet run --project Windows/DiskSpace.Tests -c Release
+      - name: Create executable icon
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.Drawing
+          $bitmap = [System.Drawing.Bitmap]::new(256,256)
+          $g = [System.Drawing.Graphics]::FromImage($bitmap)
+          $g.SmoothingMode = 'AntiAlias'
+          $g.Clear([System.Drawing.Color]::FromArgb(18,33,55))
+          $edge = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(174,204,232),12)
+          $g.DrawRectangle($edge,52,44,152,168)
+          $gauge = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(45,222,208),20)
+          $g.DrawArc($gauge,88,76,80,80,-90,265)
+          $g.DrawLine($gauge,144,184,176,184)
+          $icon = [System.Drawing.Icon]::FromHandle($bitmap.GetHicon())
+          $stream = [IO.File]::Create("$pwd/Windows/DiskSpace/DiskSpace.ico")
+          $icon.Save($stream)
+          $stream.Dispose(); $icon.Dispose(); $gauge.Dispose(); $edge.Dispose(); $g.Dispose(); $bitmap.Dispose()
+      - name: Publish standalone Windows executable
+        run: dotnet publish Windows/DiskSpace -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o build/windows-package
+      - name: Test published executable on Windows
+        shell: pwsh
+        run: |
+          Remove-Item smoke-result.txt -ErrorAction SilentlyContinue
+          $process = Start-Process build/windows-package/DiskSpace.exe -ArgumentList '--smoke-test' -PassThru
+          if (!$process.WaitForExit(60000)) { $process.Kill(); throw 'Smoke test timed out' }
+          if ($process.ExitCode -ne 0) { Get-Content smoke-result.txt -ErrorAction SilentlyContinue; throw 'Smoke test failed' }
+          if (!(Test-Path smoke-result.txt)) { throw 'Missing smoke result' }
+          $result = Get-Content smoke-result.txt -Raw
+          if (!$result.StartsWith('PASS:')) { throw $result }
+          Write-Output $result
+      - name: Prepare distribution
+        shell: pwsh
+        run: |
+          Copy-Item Windows/README-ja.txt build/windows-package/README-ja.txt
+          Compress-Archive -Path build/windows-package/* -DestinationPath build/DiskSpace-win-x64.zip
+          Expand-Archive build/DiskSpace-win-x64.zip build/zip-check
+          if (!(Test-Path build/zip-check/DiskSpace.exe)) { throw 'Executable missing from ZIP' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DiskSpace-Windows-x64
+          path: build/windows-package/*
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: DiskSpace-Windows-test-results
+          path: smoke-result.txt
+          if-no-files-found: ignore

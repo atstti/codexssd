@@ -2,3 +2,7 @@
 .swiftpm/
 build/
 .DS_Store
+**/bin/
+**/obj/
+Windows/DiskSpace/DiskSpace.ico
+smoke-result.txt

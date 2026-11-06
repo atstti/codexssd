@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>DiskSpace</AssemblyName>
+    <Version>1.0.0</Version>
+    <ApplicationIcon Condition="Exists('DiskSpace.ico')">DiskSpace.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../DiskSpace.Core/DiskSpace.Core.csproj" /></ItemGroup>
+</Project>

@@ -1,6 +1,26 @@
 # DiskSpace
 
-macOS 13以降のネイティブ・メニューバーアプリです。内蔵・マウント中の外付けHDD/SSDの容量を表示します。外部ライブラリは不要です。Windows版は未実装です。
+macOS 13以降のメニューバーアプリと、Windows 10/11（x64）の通知領域アプリです。内蔵・マウント中の外付けHDD/SSDの容量を表示します。
+
+## Windows版
+
+**Actions → Build DiskSpace for Windows → Run workflow** でビルドできます。成功した実行の **Artifacts → DiskSpace-Windows-x64** をダウンロードし、ZIPを「すべて展開」した後、**DiskSpace.exe** をダブルクリックしてください。.NETを含む自己完結型のため、利用時の開発ツールや追加ランタイムのインストールは不要です。
+
+通知領域のアイコン（隠れている場合はタスクバーの「∧」）をクリックすると容量一覧が開きます。アイコンにマウスを置くと対象ドライブと保存に使える空きを確認できます。Windowsの標準通知領域では、Macのように容量テキストを常時表示する構成にはしていません。一覧で対象切り替え・手動更新・比較情報コピー・終了ができます。×は通知領域へ格納します。
+
+Windows版の「保存に使える空き」は `GetDiskFreeSpaceExW.lpFreeBytesAvailableToCaller`、「ディスク全体の空き」は `lpTotalNumberOfFreeBytes`、「総容量」は `lpTotalNumberOfBytes` です。利用者のクォータ等で値が異なることがあります。Macの「重要なファイル用（推定）」と同じ指標ではありません。エクスプローラーと比べるときは同じドライブのプロパティの**バイト値**で比較してください。表示単位・丸め方が異なる場合があります。
+
+固定・リムーバブルの準備済みドライブを列挙し、30秒ごと・接続/取り外し時に更新します。選択対象を取り外すと起動ドライブへ戻ります。ドライブ文字のないフォルダマウント、ネットワーク、光学ドライブは今回の対象外です。
+
+開発には.NET SDK 8とWindowsを使用します（Visual Studio 2022でもcsprojを開けます）。
+
+```powershell
+dotnet run --project Windows/DiskSpace.Tests -c Release
+dotnet run --project Windows/DiskSpace
+dotnet publish Windows/DiskSpace -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o build/windows-package
+```
+
+Actionsでは容量変換などの5件のテストに加え、配布exeで実際の起動ドライブ取得、ウィンドウ生成・表示、クリップボードの読み書きをスモークテストします。対話的な画面操作・実機の外付け接続/取り外しは別途確認が必要です。署名していないためSmartScreenで止められる場合があります。詳細は [Windowsの日本語説明](Windows/README-ja.txt) を参照してください。
 
 ## アプリを入手して使う
 
