@@ -1,6 +1,6 @@
 # DiskSpace
 
-macOS 13以降のメニューバーアプリと、Windows 10/11（x64）の通知領域アプリです。内蔵・マウント中の外付けHDD/SSDの容量を表示します。
+macOS 13以降のフローティングパネルアプリと、Windows 10/11（x64）の通知領域アプリです。内蔵・マウント中の外付けHDD/SSDの容量を表示します。
 
 ## Windows版
 
@@ -24,25 +24,22 @@ Actionsでは容量変換・Windows表示・ゲージ比率などの8件のテ�
 
 Windows版1.2.3は上記の自動検証に成功しています。[検証記録](Windows/TESTING.md)で確認済み・未確認の範囲を確認できます。
 
-## アプリを入手して使う
+## macOS版を入手して使う
 
-バージョン1.1.0から、メニューバーには選択したボリュームの「重要なファイル用（推定）」を表示します。取得失敗時は「取得できません」と表示します。一覧の「現在の空き」と比較情報は引き続き確認できます。Finderとの一致は保証しません。
+[macOS版のリリース](https://github.com/atstti/codexssd/releases/tag/macos-v1.2.0)から、Apple Siliconなら `DiskSpace-macOS-arm64.dmg`、Intel Macなら `DiskSpace-macOS-x86_64.dmg` をダウンロードします。「このMacについて」の「チップ」または「プロセッサ」で機種を確認できます。
 
-最新ビルドのArtifactsにある `DiskSpace-DMG-arm64`（Apple Silicon）または `DiskSpace-DMG-x86_64`（Intel）からDMGを取得できます。外側のZIPを展開し、中のDMGを開いてアプリをApplicationsへドラッグしてください。更新時は古いDiskSpaceをメニューの「終了」で終了してからアプリを置き換えます。
+1. DMGを開き、**DiskSpace.app** を **Applications** にドラッグします。更新時は既存のDiskSpaceを終了してから置き換えます。
+2. アプリを開くとフローティングパネルが表示されます。上部のタイトルバーをドラッグすると移動でき、端や角をドラッグするとサイズを変えられます。「最前面」で固定を切り替え、「不透明度」で40〜100%に調整できます。
+3. ドライブを選ぶと「重要なファイル用（推定）」が大きく表示されます。下の一覧で「現在の空き」などを確認でき、「比較情報をコピー」でバイト値と測定情報を取得できます。
+4. パネルを閉じた後は、Dockのアイコンをクリックするか「アプリケーション」からDiskSpaceを開くと再表示できます。完全に終了するには ⌘Q を押します。
 
-ZIP内のZIPを展開できない場合は **Actions → Package DiskSpace DMG → Run workflow** で、成功したビルドの実行IDとMacのアーキテクチャを指定します。Artifactsの `DiskSpace-DMG-arm64`（Intelは `DiskSpace-DMG-x86_64`）を取得し、外側のZIPを展開します。中の **DiskSpace-macOS.dmg** を開き、**DiskSpace.app** を **Applications** へドラッグしてください。DMGはmacOSランナーで作成後に実際にマウントし、中のアプリの署名を検証しています。DMGでもAppleの公証は行っていません。
-
-このソースをGitHubに反映後、リポジトリの **Actions → Build DiskSpace for macOS → Run workflow** を選びます（push時にも自動実行）。完了した実行の **Artifacts** から、Apple Siliconなら `DiskSpace-macOS-arm64`、Intel Macなら `DiskSpace-macOS-x86_64` をダウンロードしてください。
-
-ダウンロードしたアーティファクトZIPを展開し、中の `DiskSpace-macOS.zip` も展開します。**DiskSpace.app** をApplicationsなどへ移し、ダブルクリックするとメニューバーに「残り（推定）… GB」が表示されます。ターミナルやStart.commandを起動する方式ではありません。クリックすると対象名、容量一覧、表示対象の切り替え、比較情報のコピー、手動更新、終了が利用できます。
-
-ビルドはアーキテクチャごとで、Developer ID署名・Appleの公証はしていません（アドホック署名のみ）。ダウンロードしたアプリがGatekeeperに止められた場合は、出所を確認したうえでmacOSの「システム設定 → プライバシーとセキュリティ → このまま開く」を使用してください。組織のポリシーによっては起動できません。一般配布には別途Developer ID署名と公証が必要です。
+Appleの公証は行っていません（アドホック署名）。Gatekeeperで起動が止まる場合は、配布元を確認したうえで「システム設定 → プライバシーとセキュリティ → このまま開く」を選んでください。
 
 ## Xcodeで起動・開発
 
 1. MacにXcode 15以降をインストールし、初回起動を完了します。
 2. このリポジトリの **Package.swift** をXcodeで開きます。
-3. `DiskSpace` スキームと実行先 `My Mac` を選択し、Run（⌘R）します。Dockのウィンドウではなくメニューバーを確認してください。
+3. `DiskSpace` スキームと実行先 `My Mac` を選択し、Run（⌘R）します。フローティングパネルが開きます。
 4. Test（⌘U）で容量変換のテストを実行します。
 
 コマンドラインから検証・アプリ化する場合：
@@ -61,7 +58,7 @@ bash scripts/build-app.sh
 | --- | --- |
 | 総容量 | `statfs.f_blocks × f_bsize` |
 | 現在の空き | `statfs.f_bavail × f_bsize`。dfのAvailableと比較する値 |
-| 重要なファイル用（推定） | Foundationの `volumeAvailableCapacityForImportantUsage`。OSによる推定値。メニューバーはこの値 |
+| 重要なファイル用（推定） | Foundationの `volumeAvailableCapacityForImportantUsage`。OSによる推定値。パネル上部に表示 |
 
 内部はバイト単位、表示は十進（1 GB = 1,000,000,000バイト）で小数第2位です。0は `0.00 GB`、取得失敗は `取得できません` と表示します。固定値の加算やFinderに合わせる補正はしません。推定値はFinderの「空き領域」や「パージ可能」そのものではなく、その差をパージ可能容量とも断定しません。
 
@@ -80,6 +77,6 @@ bash scripts/build-app.sh
 
 ## 検証状況
 
-初期実装環境はLinuxです。GitHub ActionsのmacOSランナーで `swift test`、releaseビルド、バンドル構造、アドホック署名検証、ZIP生成を実行しています。実行結果は[ビルド記録](https://github.com/atstti/codexssd/actions/runs/42068780034)で確認できます。GUI起動・実ドライブの接続取り外し・Finder比較は**未確認**です。ActionsはGUI操作を検証しません。
+GitHub ActionsのApple Silicon／Intelランナーで `swift test`、パネルの起動・サイズ変更・閉じる操作・再表示のスモークテスト、リリースビルド、アドホック署名検証、DMGの整合性検証とマウントを実行します。手動のドラッグ操作・実ドライブの接続取り外し・Finder比較は別途確認が必要です。結果は[リリースノート](https://github.com/atstti/codexssd/releases/tag/macos-v1.2.0)に記載しています。
 
-テストには上記の観測値、0と取得失敗の区別、十進単位、整数オーバーフローを含めています。Macでアプリを開いた後、メニューバー表示・対象切り替え・コピー内容・30秒更新・外付け取り外し時の起動ディスク復帰を確認してください。
+テストには上記の観測値、0と取得失敗の区別、十進単位、整数オーバーフローを含めています。Macでアプリを開いた後、パネル表示・対象切り替え・コピー内容・30秒更新・外付け取り外し時の起動ディスク復帰を確認してください。

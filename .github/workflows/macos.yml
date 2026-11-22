@@ -32,6 +32,8 @@ jobs:
         run: swift test
       - name: Build application bundle and ZIP
         run: bash scripts/build-app.sh
+      - name: Test launch, resize, close and reopen
+        run: build/DiskSpace.app/Contents/MacOS/DiskSpace --smoke-test
       - name: Verify bundle
         run: |
           plutil -lint build/DiskSpace.app/Contents/Info.plist
